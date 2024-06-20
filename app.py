@@ -7,7 +7,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 import cv2
 import easyocr
 
-# from helpers.detect import detect_num_plate
+
+
 
 # Configure application
 app = Flask(__name__)
@@ -22,6 +23,7 @@ Session(app)
 
 def detect_num_plate():
     harcascade = "model/haarcascade_russian_plate_number.xml"
+    count =0
 
     cv2.waitKey(500)
     cap = cv2.VideoCapture(0)
@@ -49,6 +51,9 @@ def detect_num_plate():
                 
                 reader = easyocr.Reader(['en'])
                 result = reader.readtext(img_roi)
+                # cv2.rectangle(img, (0,200), (640,300), (0,255,0), cv2.FILLED)
+                cv2.imwrite("static/scaned_img_" + str(count) + ".jpg", img)
+                count += 1
 
                 texts = [text for (_, text, _) in result]
                 return(texts)
@@ -63,19 +68,22 @@ def index():
 def checkin():
     if request.method == "GET":
         num_plate = detect_num_plate()
+        num_plate = num_plate[0].replace(" ","")
+        num_plate = num_plate.upper()
         try:
-            db.execute("INSERT INTO parking (veh_num, day, month, year, hour, min) VALUES(?,?,?,?,?,?)", num_plate[0], dt.day, dt.month, dt.year, dt.hour,dt.minute)
+            db.execute("INSERT INTO parking (veh_num, day, month, year, hour, min) VALUES(?,?,?,?,?,?)", num_plate, dt.day, dt.month, dt.year, dt.hour,dt.minute)
         except Exception:
             return render_template("checkin.html", error="cant checkin twice")
-
-        return redirect("/")
+        
+        return render_template("checkedin.html", num_plate=num_plate)
+        # return redirect("/")
         # return render_template("checkin.html",error="")
     else:
         veh_num = request.form.get("number")
         veh_num = veh_num.replace(" ","")
         veh_num = veh_num.upper()
         try:
-            db.execute("INSERT INTO parking (veh_num, day, month, year, hour, min) VALUES(?,?,?,?,?,?)", veh_num, dt.day, dt.month, dt.year, dt.hour,dt.minute)
+            db.execute("INSERT INTO parking (veh_num, day, month, year, hour, min) VALUES(?,?,?,?,?,?)", num_plate, dt.day, dt.month, dt.year, dt.hour,dt.minute)
         except Exception:
             return render_template("checkin.html", error="cant checkin twice")
 
@@ -85,7 +93,30 @@ def checkin():
 @app.route("/checkout", methods=["GET", "POST"])
 def checkout():
     if request.method == "GET":
-        return render_template("checkout.html",error="")
+        num_plate = detect_num_plate()
+        num_plate = num_plate[0].replace(" ","")
+        num_plate = num_plate.upper()
+        ret_hour = db.execute("SELECT hour FROM parking WHERE veh_num=?", num_plate)
+        ret_min = db.execute("SELECT min FROM parking WHERE veh_num=?", num_plate)
+
+        if not ret_hour:
+            return render_template("checkout.html", error="Vehicle not checked-in")
+
+        ci_hour = ret_hour[0]["hour"]
+        ci_minute = ret_min[0]["min"]
+
+        hours = dt.hour - ci_hour
+        minutes = dt.minute - ci_minute
+
+        minutes += hours*60
+
+        try:
+            db.execute("DELETE FROM parking WHERE veh_num=?", num_plate)
+        except Exception:
+            return render_template("checkout.html", error="Vehicle not checked-in")
+        
+        return render_template("payment.html", min=minutes)
+        # return render_template("checkout.html",error="")
     else:
         veh_num = request.form.get("number")
         veh_num = veh_num.replace(" ","")

@@ -139,33 +139,41 @@ def checkin():
         veh_num = veh_num.replace(" ","")
         veh_num = veh_num.upper()
         try:
-            db.execute("INSERT INTO parking (veh_num, day, month, year, hour, min) VALUES(?,?,?,?,?,?)", num_plate, dt.day, dt.month, dt.year, dt.hour,dt.minute)
+            db.execute("INSERT INTO parking (veh_num, day, month, year, hour, min) VALUES(?,?,?,?,?,?)", veh_num, dt.day, dt.month, dt.year, dt.hour,dt.minute)
         except Exception:
             return render_template("checkin.html", error="cant checkin twice")
 
-        return redirect("/")
+        return render_template("checkedin.html", num_plate=veh_num)
 
 # CheckOut Route
 @app.route("/checkout", methods=["GET", "POST"])
 def checkout():
     if request.method == "GET":
+        # Detect number plate
         num_plate = detect_num_plate()
-        num_plate = num_plate[0].replace(" ","")
+
+        # Pre-Process the number plate to remove unwanted inputs
+        try:
+            num_plate = num_plate[0].replace(" ","")
+        except Exception:
+            return render_template("checkout.html", error="Detection Fail. Add manually")
+        
         num_plate = num_plate.upper()
         ret_hour = db.execute("SELECT hour FROM parking WHERE veh_num=?", num_plate)
         ret_min = db.execute("SELECT min FROM parking WHERE veh_num=?", num_plate)
 
+        # Empty return means there is no such car checked-in. Allow to checkout manually
         if not ret_hour:
-            return render_template("checkout.html", error="Vehicle not checked-in")
-
+            return render_template("checkout.html", error="Vehicle not checked-in. Enter manually to check")
+        
+        # Calculate time spent in parking lot
         ci_hour = ret_hour[0]["hour"]
         ci_minute = ret_min[0]["min"]
-
         hours = dt.hour - ci_hour
         minutes = dt.minute - ci_minute
-
         minutes += hours*60
 
+        # Delete from database
         try:
             db.execute("DELETE FROM parking WHERE veh_num=?", num_plate)
         except Exception:

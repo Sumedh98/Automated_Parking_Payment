@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+
+{% block main %}
+    <div class="section">
+        <form acition="/checkin" method="POST">
+            <h1>{{error}}</h1>
+            <div class="mb-3">
+                <input autocomplete="off" autofocus name="number" placeholder="Vehicle Number" class="form-control mx-auto w-auto" type="text">
+            </div>
+            <div class="mb-3">
+                <button class="btn btn-primary" type="submit">Exit</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

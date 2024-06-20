@@ -30,7 +30,6 @@ def detect_num_plate():
     cap.set(4, 480) #height
     
     min_area = 500
-    count = 0
     flag=1
     
     # while True:
@@ -46,13 +45,6 @@ def detect_num_plate():
                 cv2.rectangle(img, (x,y), (x+w, y+h), (0,255,0), 2)
                 cv2.putText(img, "Number Plate", (x,y-5), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (255, 0, 255), 2)
                 img_roi = img[y: y+h, x:x+w]
-                # cv2.imshow("ROI", img_roi)
-                # cv2.imshow("Result", img)
-                #'--psm 8 --oem 3'
-                #config='--psm 7 --oem 1'
-                # text = pytesseract.image_to_string(img_roi)
-                # # Print the OCR result
-                # print("Detected License Plate Number:", text.strip())
     
                 
                 reader = easyocr.Reader(['en'])
@@ -60,15 +52,6 @@ def detect_num_plate():
 
                 texts = [text for (_, text, _) in result]
                 return(texts)
-                for (bbox, text, prob) in result:
-                    print(f'Text: {text}, Probability: {prob}')
-    
-                cv2.imwrite("plates/scaned_img_" + str(count) + ".jpg", img_roi)
-                cv2.rectangle(img, (0,200), (640,300), (0,255,0), cv2.FILLED)
-                cv2.putText(img, "Plate Saved", (150, 265), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 0, 255), 2)
-                cv2.imshow("Results",img)
-                cv2.waitKey(5000)
-                count += 1
 
 
 @app.route("/")
@@ -131,5 +114,3 @@ def checkout():
 
         return render_template("payment.html", min=minutes)
 
-
-        return redirect("/")

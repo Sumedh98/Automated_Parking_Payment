@@ -1,0 +1,6 @@
+Flask==2.1.2
+Flask-Session==0.4.0
+cs50==3.10.4
+Werkzeug==2.1.2
+opencv-python==4.5.5.64
+easyocr==1.4

@@ -161,16 +161,22 @@ def checkout():
         num_plate = num_plate.upper()
         ret_hour = db.execute("SELECT hour FROM parking WHERE veh_num=?", num_plate)
         ret_min = db.execute("SELECT min FROM parking WHERE veh_num=?", num_plate)
+        ret_date = db.execute("SELECT day FROM parking WHERE veh_num=?", num_plate)
+        # ret_month = db.execute("SELECT month FROM parking WHERE veh_num=?", num_plates)
 
         # Empty return means there is no such car checked-in. Allow to checkout manually
         if not ret_hour:
             return render_template("checkout.html", error="Vehicle not checked-in. Enter manually to check")
         
         # Calculate time spent in parking lot
+        ci_day = ret_date[0]["day"]
+        # ci_month = ret_month[0]["month"]
         ci_hour = ret_hour[0]["hour"]
         ci_minute = ret_min[0]["min"]
         hours = dt.hour - ci_hour
         minutes = dt.minute - ci_minute
+        days = dt.day - ci_day
+        hours += days*24
         minutes += hours*60
 
         # Delete from database
